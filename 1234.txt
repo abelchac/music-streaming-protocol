@@ -1,0 +1,217 @@
+
+
+
+
+Internet Engineering Task Force (IETF)                         A. Chacko
+Request for Comments: 1234                                       D. Wang
+Category: Informational                       University of Pennsylvania
+ISSN: 2070-1721                                            22 April 2021
+
+
+                        Music Streaming Protocol
+
+Abstract
+
+   Music Streaming Protocol, MSP, is an application-level protocol for
+   real-time control over the delivery of audio data, e.g. songs.
+
+Status of This Memo
+
+   This document is not an Internet Standards Track specification; it is
+   published for informational purposes.
+
+   This document is a product of the Internet Engineering Task Force
+   (IETF).  It represents the consensus of the IETF community.  It has
+   received public review and has been approved for publication by the
+   Internet Engineering Steering Group (IESG).  Not all documents
+   approved by the IESG are candidates for any level of Internet
+   Standard; see Section 2 of RFC 7841.
+
+   Information about the current status of this document, any errata,
+   and how to provide feedback on it may be obtained at
+   https://www.rfc-editor.org/info/rfc1234.
+
+Copyright Notice
+
+   Copyright (c) 2021 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (https://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+Table of Contents
+
+   1.  Introduction
+     1.1.  Requirements
+     1.2.  Terminology
+     1.3.  MSP States
+   2.  MSP Message
+   3.  Request
+     3.1.  Request Line
+     3.2.  Request Header Fields
+   4.  Response
+     4.1.  Status-Code
+   5.  Method Definitions
+     5.1.  SETUP
+     5.2.  LIST
+     5.3.  PLAY
+     5.4.  STOP
+     5.5.  TEARDOWN
+   6.  Header Field Definitions
+     6.1.  Iden
+
+1.  Introduction
+
+1.1.  Requirements
+
+   The keywords MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD,
+   SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL, when they appear in this
+   document, are to be interpreted as described in RFC2119.
+
+1.2.  Terminology
+
+   Client:  The client requests audio data from the server.
+
+   Server:  The server provides playback or recording services for one
+      or more audio streams.
+
+   Message:  MSP unit of communication, a MSP request or MSP response.
+
+   Request:  A MSP request.
+
+   Response:  A MSP response.
+
+   MSP Session:  A MSP connection between the client and server
+      facilitating the transport of audio i.e. songs and related data
+      from the server.
+
+1.3.  MSP States
+
+   The server maintains a MSP session state for each stream.
+
+   SETUP:  Allocates resources for and starts a MSP session.
+
+   PLAY:  Starts transmission of audio data specified by ID number on
+      stream allocated during SETUP.
+
+   STOP:  Halts stream without freeing resources allocated for the
+      session on server.
+
+   LIST:  Retrieves a list of songs that are available on the server
+      along with their respective ID numbers.
+
+   TEARDOWN:  Frees all allocated resources associated with a MSP
+      session on the server and destroys it.
+
+2.  MSP Message
+
+   MSP messages are encoded in UTF-8 and MSP lines are terminated by
+   CRLF.  A MSP message is terminated by an empty line.
+
+3.  Request
+
+   A client sends a MSP request to the server.  A MSP request contains a
+   method and parameters for the method.  The server MUST be able to
+   respond to new requests from a client regardless of prior requests
+   from that client.
+
+   Request =  Request-Line     ;
+              request-header   ;
+              CRLF
+              [ message-body ] ;
+
+3.1.  Request Line
+
+   Method = "SETUP"      ;
+          | "PLAY"       ;
+          | "STOP"       ;
+          | "LIST"       ;
+          | "TEARDOWN"   ;
+
+3.2.  Request Header Fields
+
+   request-header = "Iden"   ;
+
+4.  Response
+
+   Request =  Status-Code      ;
+              CRLF
+              [ message-body ] ;
+
+4.1.  Status-Code
+
+   A Status-Code indicates the status of the server's response to a
+   client's request.  Codes are represented as a 2 digit integer.
+
+   Status-Code = 10 ; OK
+               | 20 ; Iden not found
+
+5.  Method Definitions
+
+   The method token indicates the method to be performed on the server.
+
+   method      direction           requirement
+   SETUP       client->server      required
+   PLAY        client->server      required
+   STOP        client->server      required
+   LIST        client->server      required
+   TEARDOWN    client->server      required
+
+5.1.  SETUP
+
+   A client issues a SETUP request to notify the server to allocate
+   resources for a audio stream and begin a MSP session.
+
+5.2.  LIST
+
+   A client issues a LIST request to request a response from the server.
+   A LIST response from the server MUST contain a list of all songs and
+   their associated ID number labels available on the server.
+
+5.3.  PLAY
+
+   A client issues a PLAY request to notify the server to start sending
+   song data.  A client MUST NOT send a PLAY request until all SETUP
+   requests are successfully acknowledged.
+
+   A PLAY request MUST contain a Iden request header.  This parameter
+   specifies the ID number of the song on the server requested by the
+   client.
+
+   A PLAY request positions the play time to the beginning of the data
+   to be streamed.
+
+   In the case that the server is already playing a song, a PLAY request
+   immediately switches to streaming the new song.  If the requested
+   song is the same as that which is already playing, i.e. identified by
+   the same ID number, the PLAY request causes no action.
+
+5.4.  STOP
+
+   A client issues a STOP request halts the delivery of the audio
+   stream.  Any server resources MUST be kept.
+
+   A STOP request causes no action if no song is currently being
+   streamed.
+
+5.5.  TEARDOWN
+
+   A client issues a TEARDOWN request to stop stream delivery and to
+   notify the server to free all associated resources and destroy the
+   MSP session.
+
+6.  Header Field Definitions
+
+   Header fields specify parameters to be used in MSP messages.
+
+6.1.  Iden
+
+   The Iden request header field is sent from the client to the server
+   to specify the ID number of the song to be streamed.
